@@ -63,7 +63,7 @@ func (now *User) DoMessage(msg string) {
 	if msg == "who" {
 		now.server.maplock.Lock()
 		for _, user := range now.server.OnlineMap {
-			now.sendMsg("[" + user.Addr + "]" + user.Name + ":" + "在线")
+			now.sendMsg("[" + user.Addr + "]" + user.Name + ":" + "在线\n")
 		}
 		now.server.maplock.Unlock()
 	} else if len(msg) > 7 && msg[:7] == "rename|" {
@@ -74,6 +74,24 @@ func (now *User) DoMessage(msg string) {
 		} else {
 			now.changeName(newName)
 		}
+	} else if len(msg) > 4 && msg[:3] == "to|" {
+		remoteName := strings.Split(msg, "|")[1]
+		if remoteName == "" {
+			now.sendMsg("格式不正确,正确的格式为to|张三|message...\n")
+			return
+		}
+		remoteUser, ok := now.server.OnlineMap[remoteName]
+
+		if !ok {
+			now.sendMsg("查无此人\n")
+			return
+		}
+		content := strings.Split(msg, "|")[2]
+		if content == "" {
+			now.sendMsg("消息为空,请重试\n")
+			return
+		}
+		remoteUser.sendMsg(now.Name + " say: " + content + "\n")
 	} else {
 		now.server.BroadCast(now, msg)
 	}

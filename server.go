@@ -53,7 +53,7 @@ func (now *Server) Handler(conn net.Conn) {
 		buf := make([]byte, 4096)
 		for {
 
-			conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+			conn.SetReadDeadline(time.Now().Add(20 * time.Second))
 			n, err := conn.Read(buf)
 			if err != nil {
 				if ne, ok := err.(net.Error); ok && ne.Timeout() {
