@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strings"
 )
 
 type User struct {
@@ -44,6 +45,15 @@ func (now *User) sendMsg(msg string) {
 	now.conn.Write([]byte(msg))
 }
 
+func (now *User) changeName(newName string) {
+	now.server.maplock.Lock()
+	delete(now.server.OnlineMap, now.Name)
+	now.Name = newName
+	now.server.OnlineMap[now.Name] = now
+	now.server.maplock.Unlock()
+	now.sendMsg("您的用户名更新为：" + now.Name + "\n")
+}
+
 func (now *User) DoMessage(msg string) {
 	if msg == "who" {
 		now.server.maplock.Lock()
@@ -51,6 +61,14 @@ func (now *User) DoMessage(msg string) {
 			now.sendMsg("[" + user.Addr + "]" + user.Name + ":" + "在线")
 		}
 		now.server.maplock.Unlock()
+	} else if len(msg) > 7 && msg[:7] == "rename|" {
+		newName := strings.Split(msg, "|")[1]
+		_, ok := now.server.OnlineMap[newName]
+		if ok {
+			now.sendMsg("用户名重复了\n")
+		} else {
+			now.changeName(newName)
+		}
 	} else {
 		now.server.BroadCast(now, msg)
 	}
