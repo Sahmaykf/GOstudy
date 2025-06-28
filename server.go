@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -50,6 +51,23 @@ func (now *Server) Handler(conn net.Conn) {
 
 	//广播信息
 	now.BroadCast(user, "上线")
+
+	//用户发信息 读进来
+	go func() {
+		buf := make([]byte, 4096)
+		n, err := conn.Read(buf)
+		if err == io.EOF {
+			now.BroadCast(user, "下线")
+			return
+		}
+		if err != nil {
+			fmt.Println("Conn Read err")
+			return
+		}
+		msg := string(buf[:n-1])
+		now.BroadCast(user, msg)
+	}()
+	select {}
 }
 func (now *Server) Start() {
 	fmt.Println("Start() 已运行") // 👈 先确保启动函数被调用
