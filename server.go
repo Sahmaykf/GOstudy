@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -47,28 +48,39 @@ func (now *Server) Handler(conn net.Conn) {
 	user := NewUser(conn, now)
 	//广播信息
 	user.Online()
-
 	//用户发信息 读进来
 	go func() {
 		buf := make([]byte, 4096)
-		n, err := conn.Read(buf)
-		if err == io.EOF {
-			user.Offline()
-			return
+		for {
+
+			conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+			n, err := conn.Read(buf)
+			if err != nil {
+				if ne, ok := err.(net.Error); ok && ne.Timeout() {
+					user.sendMsg("你被踢了")
+					user.Offline()
+					return
+				}
+				if err == io.EOF {
+					user.Offline()
+					return
+				}
+				fmt.Println("Conn Read err:", err)
+				return
+			}
+			if n > 0 {
+				msg := string(buf[:n-1])
+				//now.BroadCast(user, msg)
+				//用户处理信息
+				user.DoMessage(msg)
+			}
+
 		}
-		if err != nil {
-			fmt.Println("Conn Read err")
-			return
-		}
-		msg := string(buf[:n-1])
-		//now.BroadCast(user, msg)
-		//用户处理信息
-		user.DoMessage(msg)
 	}()
 	select {}
 }
 func (now *Server) Start() {
-	fmt.Println("Start() 已运行") // 👈 先确保启动函数被调用
+	fmt.Println("Start() 已运行") // 先确保启动函数被调用
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", now.Ip, now.Port))
 	if err != nil {
 		fmt.Println("net.listen err:", err)

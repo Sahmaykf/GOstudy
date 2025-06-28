@@ -11,6 +11,7 @@ type User struct {
 	C      chan string
 	conn   net.Conn
 	server *Server
+	done   chan struct{}
 }
 
 func NewUser(conn net.Conn, server *Server) *User {
@@ -19,6 +20,7 @@ func NewUser(conn net.Conn, server *Server) *User {
 		Name:   userAddr,
 		Addr:   userAddr,
 		C:      make(chan string),
+		done:   make(chan struct{}),
 		conn:   conn,
 		server: server,
 	}
@@ -39,6 +41,9 @@ func (now *User) Offline() {
 	delete(now.server.OnlineMap, now.Name)
 	now.server.maplock.Unlock()
 	now.server.BroadCast(now, "下线")
+	close(now.done)
+	close(now.C)
+	now.conn.Close()
 }
 
 func (now *User) sendMsg(msg string) {
@@ -76,7 +81,14 @@ func (now *User) DoMessage(msg string) {
 
 func (now *User) ListenMessage() {
 	for {
-		msg := <-now.C
-		now.conn.Write([]byte(msg + "\n"))
+		select {
+		case msg, ok := <-now.C:
+			if !ok {
+				return
+			}
+			now.conn.Write([]byte(msg + "\n"))
+		case <-now.done:
+			return
+		}
 	}
 }
