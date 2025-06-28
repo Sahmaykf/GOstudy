@@ -1,6 +1,8 @@
 package main
 
-import "net"
+import (
+	"net"
+)
 
 type User struct {
 	Name   string
@@ -38,8 +40,20 @@ func (now *User) Offline() {
 	now.server.BroadCast(now, "下线")
 }
 
+func (now *User) sendMsg(msg string) {
+	now.conn.Write([]byte(msg))
+}
+
 func (now *User) DoMessage(msg string) {
-	now.server.BroadCast(now, msg)
+	if msg == "who" {
+		now.server.maplock.Lock()
+		for _, user := range now.server.OnlineMap {
+			now.sendMsg("[" + user.Addr + "]" + user.Name + ":" + "在线")
+		}
+		now.server.maplock.Unlock()
+	} else {
+		now.server.BroadCast(now, msg)
+	}
 }
 
 func (now *User) ListenMessage() {
