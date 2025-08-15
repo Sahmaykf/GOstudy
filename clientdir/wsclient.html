@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Client</title>
+</head>
+<body>
+    <input id="msg" type="text" placeholder="message">
+    <button onclick="send()">Send</button>
+    <pre id="log"></pre>
+    <script>
+    const ws = new WebSocket('ws://localhost:8080/ws');
+    ws.onmessage = (ev) => {
+        document.getElementById('log').textContent += ev.data + '\n';
+    };
+    function send(){
+        const val = document.getElementById('msg').value;
+        ws.send(val);
+    }
+    </script>
+</body>
+</html>
