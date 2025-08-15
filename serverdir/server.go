@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -42,7 +43,7 @@ func (now *Server) BroadCast(user *User, msg string) {
 	sendMsg := "[" + user.Addr + "]" + user.Name + ":" + msg
 	now.Message <- sendMsg
 }
-func (now *Server) Handler(conn net.Conn) {
+func (now *Server) Handler(conn Conn) {
 	//fmt.Println("Linked Succeeded")
 
 	user := NewUser(conn, now)
@@ -69,8 +70,7 @@ func (now *Server) Handler(conn net.Conn) {
 				return
 			}
 			if n > 0 {
-				msg := string(buf[:n-1])
-				//now.BroadCast(user, msg)
+				msg := strings.TrimSpace(string(buf[:n]))
 				//用户处理信息
 				user.DoMessage(msg)
 			}

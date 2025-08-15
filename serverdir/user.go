@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net"
 	"strings"
 )
 
@@ -9,12 +8,12 @@ type User struct {
 	Name   string
 	Addr   string
 	C      chan string
-	conn   net.Conn
+	conn   Conn
 	server *Server
 	done   chan struct{}
 }
 
-func NewUser(conn net.Conn, server *Server) *User {
+func NewUser(conn Conn, server *Server) *User {
 	userAddr := conn.RemoteAddr().String()
 	user := &User{
 		Name:   userAddr,
