@@ -11,11 +11,11 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-// StartWebSocket starts a websocket server on the given port.
 func (s *Server) StartWebSocket(port int) {
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
+			fmt.Println("Upgrader err: ", err)
 			return
 		}
 		go s.Handler(&WSConn{conn})
@@ -25,4 +25,5 @@ func (s *Server) StartWebSocket(port int) {
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		fmt.Println("WebSocket server err:", err)
 	}
+	go s.ListenMessager()
 }
