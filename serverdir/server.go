@@ -16,7 +16,8 @@ type Server struct {
 	OnlineMap map[string]*User
 	maplock   sync.RWMutex
 
-	Message chan string
+	Message     chan string
+	messageOnce sync.Once
 }
 
 func NewServer(ip string, port int) *Server {
@@ -39,6 +40,11 @@ func (now *Server) ListenMessager() {
 		now.maplock.Unlock()
 	}
 }
+func (now *Server) ensureMessageListener() {
+	now.messageOnce.Do(func() {
+		go now.ListenMessager()
+	})
+}
 func (now *Server) BroadCast(user *User, msg string) {
 	sendMsg := "[" + user.Addr + "]" + user.Name + ":" + msg
 	now.Message <- sendMsg
@@ -49,8 +55,11 @@ func (now *Server) Handler(conn Conn) {
 	user := NewUser(conn, now)
 	//广播信息
 	user.Online()
+	var wg sync.WaitGroup
+	wg.Add(1)
 	//用户发信息 读进来
 	go func() {
+		defer wg.Done()
 		buf := make([]byte, 4096)
 		for {
 
@@ -77,7 +86,7 @@ func (now *Server) Handler(conn Conn) {
 
 		}
 	}()
-	select {}
+	wg.Wait()
 }
 func (now *Server) Start() {
 	fmt.Println("Start() 已运行") // 先确保启动函数被调用
@@ -88,7 +97,8 @@ func (now *Server) Start() {
 	}
 	fmt.Printf("服务器已启动，监听中：%s:%d\n", now.Ip, now.Port)
 	defer listener.Close()
-	go now.ListenMessager()
+	// go now.ListenMessager()
+	now.ensureMessageListener()
 	for {
 		conn, err := listener.Accept()
 		if err != nil {

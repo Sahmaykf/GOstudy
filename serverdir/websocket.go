@@ -20,10 +20,10 @@ func (s *Server) StartWebSocket(port int) {
 		}
 		go s.Handler(&WSConn{conn})
 	})
+	s.ensureMessageListener()
 	addr := fmt.Sprintf("%s:%d", s.Ip, port)
 	fmt.Printf("WebSocket服务器已启动，监听中：%s\n", addr)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		fmt.Println("WebSocket server err:", err)
 	}
-	go s.ListenMessager()
 }
